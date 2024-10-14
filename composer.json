@@ -1,0 +1,17 @@
+{
+    "name": "as-cornell/as_people_ldap",
+    "description": "Displays LDAP people data from directory.cornell.edu by NetID in a block.",
+    "type": "drupal-custom-module",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://it.cornell.edu/custom-web",
+    "authors": [
+        {
+            "name": "Mark Wilson",
+            "email": "mew72@cornell.edu",
+            "role": "Author"
+        }
+    ],
+    "support": {},
+    "minimum-stability": "dev",
+    "require": {}
+}
