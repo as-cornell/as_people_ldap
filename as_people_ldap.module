@@ -10,9 +10,9 @@ function as_people_ldap_get_netid_ldap($netid) {
   $settings["ldaprdn"] = $config->get("ldaprdn");
   $settings["ldappass"] = $config->get("ldappass");
   // ldap server connection variables
-  $ldap_host = 'unified-test.directory.cornell.edu';
+  $ldap_host = 'directory.cornell.edu';
   $ldap_port = '636';
-   //set cache id
+  //set cache id
   $cid = 'as_people_ldap:' . $netid;
   // generate a random number between 4 and 6 days (in seconds) to provide cache life variable
   $clife = rand(345600,518400);
@@ -26,16 +26,20 @@ function as_people_ldap_get_netid_ldap($netid) {
     // result, close connection
     // using ldap bind
     // Connect to directory.cornell.edu
-    $ds=ldap_connect('ldap://directory.cornell.edu');
-    //$ds=ldap_connect('ldaps://'. $ldap_host. ':'. $ldap_port);
+    $ds = ldap_connect('ldap://directory.cornell.edu');
+    //$ds = ldap_connect('ldaps://'. $ldap_host. ':'. $ldap_port);
     ldap_set_option($ds, LDAP_OPT_NETWORK_TIMEOUT, 2); /* 2 second timeout */
     // If connection OK, Bind to server
     if (!empty($ds)) {
-      $r=ldap_bind($ds, $settings["ldaprdn"], $settings["ldappass"]);
-      $sr=ldap_search($ds,'ou=People,o=Cornell University,c=US','uid='.$netid);
+      $r = ldap_bind($ds, $settings["ldaprdn"], $settings["ldappass"]);
+      $sr = ldap_search($ds,'ou=People,o=Cornell University,c=US','uid='.$netid);
       $info = ldap_get_entries($ds, $sr);
-      $entry = ldap_first_entry($ds, $sr);
-    if (!empty($entry)) {
+      //$entry = ldap_first_entry($ds, $sr);
+    //if (!empty($entry)) {
+    if (str_contains($info[0]['cornelledupublishedemail'][0], '@cornell.edu')) {
+      // example of how to add data to array if needed
+      //$validemail =  array_push($info[0], 'validemail');
+      //$info[0]['validemail'] = array('count' => '1',TRUE);
       //set cache
       \Drupal::cache('data')
         ->set($cid, $info, time() + $clife);
@@ -43,6 +47,8 @@ function as_people_ldap_get_netid_ldap($netid) {
       }
     } 
   } 
+
+  //dump($info);
 return $info;
 
 }
