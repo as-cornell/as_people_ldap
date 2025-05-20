@@ -36,7 +36,7 @@ function as_people_ldap_get_netid_ldap($netid) {
       $info = ldap_get_entries($ds, $sr);
       //$entry = ldap_first_entry($ds, $sr);
     //if (!empty($entry)) {
-    if (str_contains($info[0]['cornelledupublishedemail'][0], '@cornell.edu')) {
+    if (!empty($info[0]['cornelledupublishedemail'][0]) && str_contains($info[0]['cornelledupublishedemail'][0], '@cornell.edu')) {
       // example of how to add data to array if needed
       //$validemail =  array_push($info[0], 'validemail');
       //$info[0]['validemail'] = array('count' => '1',TRUE);
