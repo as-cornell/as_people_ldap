@@ -4,7 +4,7 @@ as_people_ldap.content:
     _controller: '\Drupal\as_people_ldap\Controller\PeopleLdapController::content'
     _title: 'A&S People LDAP'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer site configuration'
 as_people_ldap.settings:
   path: 'admin/config/services/as-people-ldap-settings'
   defaults:

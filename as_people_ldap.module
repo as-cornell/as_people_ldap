@@ -4,19 +4,19 @@ use Drupal\Core\Routing\RouteMatchInterface;
 
 function as_people_ldap_get_netid_ldap($netid) {
 
-  // get settings
-  $config = \Drupal::config("as_people_ldap.settings");
   $settings = [];
+  $info = [];
+  // get ldaprdn and ldappass
+  $config = \Drupal::config("as_people_ldap.settings");
   $settings["ldaprdn"] = $config->get("ldaprdn");
   $settings["ldappass"] = $config->get("ldappass");
   // ldap server connection variables
-  $ldap_host = 'directory.cornell.edu';
-  $ldap_port = '636';
+  $settings["ldaphost"] = 'directory.cornell.edu';
+  $settings["ldapport"] = '636';
   //set cache id
   $cid = 'as_people_ldap:' . $netid;
   // generate a random number between 4 and 6 days (in seconds) to provide cache life variable
   $clife = rand(345600,518400);
-  $info = [];
   //check cache
   if ($cache = \Drupal::cache('data')->get($cid)) {
     //fetch cache data
@@ -26,17 +26,25 @@ function as_people_ldap_get_netid_ldap($netid) {
     // result, close connection
     // using ldap bind
     // Connect to directory.cornell.edu
-    $ds = ldap_connect('ldap://directory.cornell.edu');
-    //$ds = ldap_connect('ldaps://'. $ldap_host. ':'. $ldap_port);
+    // legacy ldap
+    $ds = ldap_connect('ldap://'. $settings["ldaphost"]);
+    // secure ldap
+    //$ds = ldap_connect('ldaps://'. $settings["ldaphost"] . ':'. $settings["ldapport"]);
     ldap_set_option($ds, LDAP_OPT_NETWORK_TIMEOUT, 2); /* 2 second timeout */
     // If connection OK, Bind to server
     if (!empty($ds)) {
       $r = ldap_bind($ds, $settings["ldaprdn"], $settings["ldappass"]);
       $sr = ldap_search($ds,'ou=People,o=Cornell University,c=US','uid='.$netid);
-      $info = ldap_get_entries($ds, $sr);
-      //$entry = ldap_first_entry($ds, $sr);
+      if (!empty($sr)) {
+        $info = ldap_get_entries($ds, $sr);
+        //$entry = ldap_first_entry($ds, $sr);
+      }else{
+        // if there is some issue with ldap data exit without setting $info or rewriting cache.
+        //$info = '$sr is empty';
+        return;
+      } 
     //if (!empty($entry)) {
-    if (!empty($info[0]['cornelledupublishedemail'][0]) && str_contains($info[0]['cornelledupublishedemail'][0], '@cornell.edu')) {
+    if (!empty($info[0]['cornelledupublishedemail'][0]) && str_contains($info[0]['cornelledupublishedemail'][0], 'cornell.edu')) {
       // example of how to add data to array if needed
       //$validemail =  array_push($info[0], 'validemail');
       //$info[0]['validemail'] = array('count' => '1',TRUE);
@@ -48,7 +56,8 @@ function as_people_ldap_get_netid_ldap($netid) {
     } 
   } 
 
-  //dump($info);
+//dump($info);
+//dump($cache->data);
 return $info;
 
 }
