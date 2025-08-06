@@ -49,4 +49,9 @@ putenv("LDAPTLS_CACERTDIR=$tls_cert_dir");
 putenv('LDAPTLS_REQCERT=allow');
 
 
-- add /certs to /web/sites/default/files/private
+- move /certs to /web/sites/default/files/private with sftp
+- cd web/sites/default/files/private
+- conncet via sftp
+- cd files/private
+- put -r certs certs
+- exit

@@ -29,16 +29,16 @@ $settings = array(
 
 // Custom OpenLDAP Configuration for Client Certificates for LDAPS
 
-dump( 'LDAPTLS_CACERT=' . getenv('LDAPTLS_CACERT') ). PHP_EOL;
-if (getenv('LDAPTLS_CACERT')) {
-  dump(' hash: ' . exec('openssl x509 -noout -hash -in ' . getenv('LDAPTLS_CACERT'))) . PHP_EOL;
-}
-dump( 'LDAPTLS_CACERTDIR=' . getenv('LDAPTLS_CACERTDIR') ). PHP_EOL;
-dump( 'LDAPTLS_REQCERT=' . getenv('LDAPTLS_REQCERT') ). PHP_EOL;
+//dump( 'LDAPTLS_CACERT=' . getenv('LDAPTLS_CACERT') ). PHP_EOL;
+//if (getenv('LDAPTLS_CACERT')) {
+  //dump(' hash: ' . exec('openssl x509 -noout -hash -in ' . getenv('LDAPTLS_CACERT'))) . PHP_EOL;
+//}
+//dump( 'LDAPTLS_CACERTDIR=' . getenv('LDAPTLS_CACERTDIR') ). PHP_EOL;
+//dump( 'LDAPTLS_REQCERT=' . getenv('LDAPTLS_REQCERT') ). PHP_EOL;
 
 foreach ($settings as $host => $setting) {
   echo PHP_EOL;
-  dump( "Attempting to connect to {$setting['host']} on port {$setting['port']}.") . PHP_EOL;
+  //dump( "Attempting to connect to {$setting['host']} on port {$setting['port']}.") . PHP_EOL;
 
 
   $resolved_port = $setting['port'];
@@ -57,12 +57,12 @@ foreach ($settings as $host => $setting) {
   
 
 
-  //if ($cache = \Drupal::cache('data')->get($cid)) {
+  if ($cache = \Drupal::cache('data')->get($cid)) {
     //dump('Cache found.' ). PHP_EOL;
     //fetch cache data
-    //$ldapdata = $cache->data;
+    $ldapdata = $cache->data;
     //dump($ldapdata);
-  //} else {
+  } else {
     //dump('No cache found.' ). PHP_EOL;
     $link_identifier = ldap_connect($resolved_address, $resolved_port);
 
@@ -72,8 +72,8 @@ foreach ($settings as $host => $setting) {
       continue;
     }
 
-    dump('Connected.' ). PHP_EOL;
-    dump("Attempting to bind with rdn {$setting['bind_rdn']} and password {$setting['display_password']}.") . PHP_EOL;
+    //dump('Connected.' ). PHP_EOL;
+    //dump("Attempting to bind with rdn {$setting['bind_rdn']} and password {$setting['display_password']}.") . PHP_EOL;
     if (!ldap_bind($link_identifier, $setting['bind_rdn'], $setting['bind_password'])) {
       //dump( 'Unable to bind - ' . ldap_error($link_identifier) ). PHP_EOL;
       ldap_unbind($link_identifier);
@@ -81,8 +81,8 @@ foreach ($settings as $host => $setting) {
     }
 
 
-    dump('Bind succeeded.') . PHP_EOL;
-    dump( "Attempting to search with base_dn {$setting['base_dn']}, filter {$setting['filter']} and attributes " . var_export($setting['attributes'], TRUE)) . PHP_EOL;
+    //dump('Bind succeeded.') . PHP_EOL;
+    //dump( "Attempting to search with base_dn {$setting['base_dn']}, filter {$setting['filter']} and attributes " . var_export($setting['attributes'], TRUE)) . PHP_EOL;
     $search_result_identifier = ldap_search($link_identifier, $setting['base_dn'], $setting['filter'], $setting['attributes']);
     if (!$search_result_identifier) {
       //echo 'Unable to search - ' . ldap_error($link_identifier) . PHP_EOL;
@@ -90,10 +90,10 @@ foreach ($settings as $host => $setting) {
       continue;
     }
 
-    dump('Search succeeded.') . PHP_EOL;
+    //dump('Search succeeded.') . PHP_EOL;
 
     $ldapdata = ldap_get_entries($link_identifier, $search_result_identifier);
-    dump($ldapdata);
+    //dump($ldapdata);
     if (!empty($ldapdata[0]['cornelledupublishedemail'][0]) && str_contains($ldapdata[0]['cornelledupublishedemail'][0], 'cornell.edu')) {
       // example of how to add data to array if needed
       //$validemail =  array_push($ldapdata[0], 'validemail');
@@ -104,7 +104,7 @@ foreach ($settings as $host => $setting) {
       //ldap_close($ds);
       }
   }
-//}
+}
 return $ldapdata;
 
 }
