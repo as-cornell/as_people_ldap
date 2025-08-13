@@ -33,7 +33,7 @@ $settings = array(
 
 // Custom OpenLDAP Configuration for Client Certificates for LDAPS
 
-if ($showdebug == TRUE){
+if ($showdebug == TRUE) {
   dump( 'LDAPTLS_CACERT=' . getenv('LDAPTLS_CACERT') ). PHP_EOL;
   if (getenv('LDAPTLS_CACERT')) {
     dump(' hash: ' . exec('openssl x509 -noout -hash -in ' . getenv('LDAPTLS_CACERT'))) . PHP_EOL;
@@ -45,7 +45,7 @@ if ($showdebug == TRUE){
 
 foreach ($settings as $host => $setting) {
   echo PHP_EOL;
-  if ($showdebug == TRUE){
+  if ($showdebug == TRUE) {
       dump( "Attempting to connect to {$setting['host']} on port {$setting['port']}.") . PHP_EOL;
     }
   
@@ -68,56 +68,62 @@ foreach ($settings as $host => $setting) {
 
 
   if ($cache = \Drupal::cache('data')->get($cid)) {
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
     dump('Cache found.' ). PHP_EOL;
     }
     //fetch cache data
     $ldapdata = $cache->data;
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
       echo('<p>cached LDAP entry:<br>');
       var_dump($ldapdata) . PHP_EOL;
       echo('</p>');
     }
   } else {
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
       dump('No cache found.' ). PHP_EOL;
     }
     $link_identifier = ldap_connect($resolved_address);
 
 
     if (!$link_identifier) {
-      //echo 'Unable to connect - ' . ldap_error($link_identifier) . PHP_EOL;
+      if ($showdebug == TRUE) {
+        echo 'Unable to connect - ' . ldap_error($link_identifier) . PHP_EOL;
+      }
       continue;
     }
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
     dump('Connected.' ). PHP_EOL;
     dump("Attempting to bind with rdn {$setting['bind_rdn']} and password {$setting['display_password']}.") . PHP_EOL;
     }
     if (!ldap_bind($link_identifier, $setting['bind_rdn'], $setting['bind_password'])) {
-      //dump( 'Unable to bind - ' . ldap_error($link_identifier) ). PHP_EOL;
+      if ($showdebug == TRUE) {
+        dump( 'Unable to bind - ' . ldap_error($link_identifier) ). PHP_EOL;
+      }
       ldap_unbind($link_identifier);
       continue;
     }
 
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
     dump('Bind succeeded.') . PHP_EOL;
     dump( "Attempting to search with base_dn {$setting['base_dn']}, filter {$setting['filter']} and attributes " . var_export($setting['attributes'], TRUE)) . PHP_EOL;
     }
     $search_result_identifier = ldap_search($link_identifier, $setting['base_dn'], $setting['filter'], $setting['attributes']);
     if (!$search_result_identifier) {
-      //echo 'Unable to search - ' . ldap_error($link_identifier) . PHP_EOL;
+      if ($showdebug == TRUE) {
+        echo 'Unable to search - ' . ldap_error($link_identifier) . PHP_EOL;
+      }
       ldap_unbind($link_identifier);
       continue;
     }
 
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
       dump('Search succeeded.') . PHP_EOL;
     }
 
     
     // get LDAP data for this entry
     $ldapdata = ldap_get_entries($link_identifier, $search_result_identifier);
-    if ($showdebug == TRUE){
+    if ($showdebug == TRUE) {
       echo('<p>fresh LDAP entry:<br>');
       var_dump($ldapdata) . PHP_EOL;
       echo('</p>');
