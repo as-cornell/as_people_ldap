@@ -14,6 +14,7 @@ $clife = rand(345600,518400);
 // get ldaprdn and ldappass
 $config = \Drupal::config("as_people_ldap.settings");
 // debug on local and dev environments
+$showdebug = '';
 if (PANTHEON_ENVIRONMENT == 'lando' || PANTHEON_ENVIRONMENT == 'dev'){
   $showdebug = TRUE;
 }
