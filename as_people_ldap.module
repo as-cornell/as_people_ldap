@@ -1,158 +1,16 @@
 <?php
 
+/**
+ * @file
+ * Provides LDAP integration with Cornell directory.
+ */
+
 use Drupal\Core\Routing\RouteMatchInterface;
-
-function as_people_ldap_get_netid_ldap($netid) {
-
-// declare empty arrays
-$settings = [];
-$ldapdata = [];
-//set cache id
-$cid = 'as_people_ldap:' . $netid;
-// generate a random number between 4 and 6 days (in seconds) to provide cache life variable
-$clife = rand(345600,518400);
-// get ldaprdn and ldappass
-$config = \Drupal::config("as_people_ldap.settings");
-// debug on local and dev environments
-$showdebug = '';
-if (PANTHEON_ENVIRONMENT == 'lando' || PANTHEON_ENVIRONMENT == 'dev'){
-  $showdebug = TRUE;
-}
-// put settings into array
-$settings = array(
-  'directory' => array(
-    'host' => 'ldaps://query.directory.cornell.edu:636/',
-    'port' => '636',
-    'bind_rdn' => ''.$config->get("ldaprdn").'', //This should be the full rdn and not just the username.
-    'bind_password' => ''.$config->get("ldappass").'',
-    'display_password' => 'XxXxXxX',  //display an alternate value for security
-    'base_dn' => 'ou=People,o=Cornell University,c=US', //This may be a comma-separated list of values.
-    'filter' => '(uid='.$netid.')', //Could be an alternate objectClass or a uid
-    'attributes' => array('cn','cornelleducampusaddress','cornelledupublishedemail','cornelleducampusphone'),
-  ),
-);
-
-// Custom OpenLDAP Configuration for Client Certificates for LDAPS
-
-if ($showdebug == TRUE) {
-  dump( 'LDAPTLS_CACERT=' . getenv('LDAPTLS_CACERT') ). PHP_EOL;
-  if (getenv('LDAPTLS_CACERT')) {
-    dump(' hash: ' . exec('openssl x509 -noout -hash -in ' . getenv('LDAPTLS_CACERT'))) . PHP_EOL;
-    }
-  dump( 'LDAPTLS_CACERTDIR=' . getenv('LDAPTLS_CACERTDIR') ). PHP_EOL;
-  dump( 'LDAPTLS_REQCERT=' . getenv('LDAPTLS_REQCERT') ). PHP_EOL;
-
- }
-
-foreach ($settings as $host => $setting) {
-  echo PHP_EOL;
-  if ($showdebug == TRUE) {
-      dump( "Attempting to connect to {$setting['host']} on port {$setting['port']}.") . PHP_EOL;
-    }
-  
-
-
-  $resolved_port = $setting['port'];
-  if (!is_numeric($resolved_port)) {
-    // If it's a string, then attempt to use it as the name of a PHP constant.
-    $resolved_port = constant($resolved_port);
-  }
-
-  $resolved_address = $setting['host'];
-  // PHP ldap_connect function ignores the port option if scheme is
-  // included in the host, so we must appened port number to the 'address'
-  if (strpos($resolved_address, 'ldap') !== false) {
-    $resolved_address = $resolved_address . ":" . $resolved_port;
-  }
-
-  
-
-
-  if ($cache = \Drupal::cache('data')->get($cid)) {
-    if ($showdebug == TRUE) {
-    dump('Cache found.' ). PHP_EOL;
-    }
-    //fetch cache data
-    $ldapdata = $cache->data;
-    if ($showdebug == TRUE) {
-      echo('<p>cached LDAP entry:<br>');
-      var_dump($ldapdata) . PHP_EOL;
-      echo('</p>');
-    }
-  } else {
-    if ($showdebug == TRUE) {
-      dump('No cache found.' ). PHP_EOL;
-    }
-    $link_identifier = ldap_connect($resolved_address);
-
-
-    if (!$link_identifier) {
-      if ($showdebug == TRUE) {
-        echo 'Unable to connect - ' . ldap_error($link_identifier) . PHP_EOL;
-      }
-      continue;
-    }
-    if ($showdebug == TRUE) {
-    dump('Connected.' ). PHP_EOL;
-    dump("Attempting to bind with rdn {$setting['bind_rdn']} and password {$setting['display_password']}.") . PHP_EOL;
-    }
-    if (!ldap_bind($link_identifier, $setting['bind_rdn'], $setting['bind_password'])) {
-      if ($showdebug == TRUE) {
-        dump( 'Unable to bind - ' . ldap_error($link_identifier) ). PHP_EOL;
-      }
-      ldap_unbind($link_identifier);
-      continue;
-    }
-
-    if ($showdebug == TRUE) {
-    dump('Bind succeeded.') . PHP_EOL;
-    dump( "Attempting to search with base_dn {$setting['base_dn']}, filter {$setting['filter']} and attributes " . var_export($setting['attributes'], TRUE)) . PHP_EOL;
-    }
-    $search_result_identifier = ldap_search($link_identifier, $setting['base_dn'], $setting['filter'], $setting['attributes']);
-    if (!$search_result_identifier) {
-      if ($showdebug == TRUE) {
-        echo 'Unable to search - ' . ldap_error($link_identifier) . PHP_EOL;
-      }
-      ldap_unbind($link_identifier);
-      continue;
-    }
-
-    if ($showdebug == TRUE) {
-      dump('Search succeeded.') . PHP_EOL;
-    }
-
-    
-    // get LDAP data for this entry
-    $ldapdata = ldap_get_entries($link_identifier, $search_result_identifier);
-    if ($showdebug == TRUE) {
-      echo('<p>fresh LDAP entry:<br>');
-      var_dump($ldapdata) . PHP_EOL;
-      echo('</p>');
-    }
-
-    if (!empty($ldapdata[0]['cornelledupublishedemail'][0]) && str_contains($ldapdata[0]['cornelledupublishedemail'][0], 'cornell.edu')) {
-      // example of how to add data to array if needed
-      //$validemail =  array_push($ldapdata[0], 'validemail');
-      //$ldapdata['validemail'] = array('count' => '1',TRUE);
-      //set cache
-      \Drupal::cache('data')
-        ->set($cid, $ldapdata, time() + $clife);
-      //ldap_close($ds);
-      }
-  }
-}
-
-return $ldapdata;
-
-}
-
-
 
 /**
  * Implements hook_help().
  */
-function as_people_ldap_help($route_name, RouteMatchInterface $route_match)
-{
+function as_people_ldap_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.as_people_ldap':
       $output = '';
@@ -162,4 +20,3 @@ function as_people_ldap_help($route_name, RouteMatchInterface $route_match)
       return $output;
   }
 }
-

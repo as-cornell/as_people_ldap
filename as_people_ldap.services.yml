@@ -1,0 +1,13 @@
+services:
+  # Logger channel
+  logger.channel.as_people_ldap:
+    parent: logger.channel_base
+    arguments: ['as_people_ldap']
+
+  # Service classes
+  as_people_ldap.api:
+    class: Drupal\as_people_ldap\Service\LdapApiService
+    arguments: ['@cache.data', '@config.factory', '@logger.channel.as_people_ldap']
+
+  as_people_ldap.formatter:
+    class: Drupal\as_people_ldap\Service\LdapFormatterService

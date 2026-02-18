@@ -38,23 +38,32 @@ class AsPeopleLdapSettingsForm extends ConfigFormBase {
 
 
   public function buildForm(array $form, FormStateInterface $form_state) {
-
-
-    // switch to db based config
     $config = $this->config(static::SETTINGS);
-    $form['ldaprdn'] = array(
+
+    $form['ldaprdn'] = [
       '#type' => 'textfield',
-      '#description' => t('ldap rdn or dn'),
-      '#title' => t('ldap rdn or dn'),
+      '#title' => $this->t('LDAP RDN or DN'),
+      '#description' => $this->t('The full LDAP RDN (Relative Distinguished Name) or DN (Distinguished Name) for binding to the LDAP server.'),
       '#default_value' => $config->get('ldaprdn'),
-    );
-    $form['ldappass'] = array(
+      '#required' => TRUE,
+    ];
+
+    $form['ldappass'] = [
       '#type' => 'textfield',
-      '#description' => t('ldap password'),
-      '#title' => t('ldap password'),
+      '#title' => $this->t('LDAP Password'),
+      '#description' => $this->t('The password for the LDAP bind account.'),
       '#default_value' => $config->get('ldappass'),
-    );
-    return parent::buildForm($form,$form_state);
+      '#required' => TRUE,
+    ];
+
+    $form['debug_mode'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable debug mode'),
+      '#description' => $this->t('Enable verbose debugging output for LDAP connections. Shows connection details, bind attempts, and search queries. Only use in development environments.'),
+      '#default_value' => $config->get('debug_mode') ?? FALSE,
+    ];
+
+    return parent::buildForm($form, $form_state);
   }
 
   /**
@@ -65,11 +74,12 @@ class AsPeopleLdapSettingsForm extends ConfigFormBase {
    */
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-    // switch to db based config
     $this->configFactory->getEditable(static::SETTINGS)
       ->set('ldaprdn', $form_state->getValue('ldaprdn'))
       ->set('ldappass', $form_state->getValue('ldappass'))
+      ->set('debug_mode', $form_state->getValue('debug_mode'))
       ->save();
+
+    parent::submitForm($form, $form_state);
   }
 }
