@@ -4,3 +4,5 @@ package: AS
 type: module
 core_version_requirement: ^9.5 || ^10 || ^11
 configure: as_people_ldap.list
+dependencies:
+  - key:key

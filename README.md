@@ -270,15 +270,16 @@ Displays LDAP data for a given NetID in a test page.
 - SSL/TLS certificates for LDAPS connection
 
 **Drupal Modules:**
-- No additional module dependencies
+- [Key](https://www.drupal.org/project/key) - Required for secure credential storage
 
 ## Installation
 
 ### Via Composer (Recommended)
 
 ```bash
-composer require as-cornell/as_people_ldap
-drush en as_people_ldap -y
+# Install the module and Key module dependency
+composer require as-cornell/as_people_ldap drupal/key
+drush en key as_people_ldap -y
 drush cr
 ```
 
@@ -307,6 +308,40 @@ LDAP RDN: uid=drupal-ldap,ou=applications,o=Cornell University,c=US
 LDAP Password: [secure password]
 Debug Mode: ☐ (unchecked for production)
 ```
+
+### Secure Credential Storage
+
+Credentials are stored securely using the **Key module**:
+
+✅ **Stored in database** - Keys are saved to the database via the Key module
+✅ **Never exported** - Credentials are NOT included in configuration exports
+✅ **Separate from config** - Not stored in `as_people_ldap.settings.yml`
+✅ **Password field security** - Password field is type `password` (masked input)
+
+**How it works:**
+1. When you save the settings form, credentials are stored as Key entities:
+   - `as_people_ldap_rdn` - Stores the LDAP RDN/DN
+   - `as_people_ldap_password` - Stores the LDAP password
+2. Keys are managed by the Key module and stored in the database
+3. The LdapApiService retrieves credentials from the Key repository at runtime
+4. Configuration exports (`drush cex`) do NOT export these keys
+
+**Password updates:**
+- Leave the password field blank to keep the existing password
+- Enter a new password to update the stored password
+- A status message confirms when a password is currently stored
+
+**Viewing stored keys:**
+```bash
+# List all keys
+drush key:list
+
+# View key details (will show metadata but not the actual value)
+drush config:get key.key.as_people_ldap_rdn
+drush config:get key.key.as_people_ldap_password
+```
+
+**Important:** While keys are stored in the database, you should still use environment-specific databases and never commit database dumps containing production credentials to version control.
 
 ### Debug Mode
 
@@ -350,20 +385,23 @@ drush cr
 
 ### Configuration via Drush
 
+**Note:** With Key module integration, credentials are stored as keys, not in configuration. Use the settings form for credential management, or manage keys directly:
+
 ```bash
-# Set LDAP credentials
-drush config:set as_people_ldap.settings ldaprdn 'uid=myapp,ou=apps,o=Cornell University,c=US' -y
-drush config:set as_people_ldap.settings ldappass 'your-password' -y
+# Enable/disable debug mode (this IS stored in config)
+drush config:set as_people_ldap.settings debug_mode 1 -y  # Enable
+drush config:set as_people_ldap.settings debug_mode 0 -y  # Disable
 
-# Enable debug mode
-drush config:set as_people_ldap.settings debug_mode 1 -y
+# View stored keys (metadata only, not values)
+drush key:list
 
-# Disable debug mode
-drush config:set as_people_ldap.settings debug_mode 0 -y
-
-# Clear cache after configuration changes
+# Clear cache after changes
 drush cr
 ```
+
+**Managing credentials programmatically** (advanced):
+
+If you need to set credentials via Drush for automation, you would need to create the key entities directly. It's recommended to use the settings form instead.
 
 ### Cache Settings
 
@@ -608,20 +646,60 @@ vendor/bin/phpcs --standard=Drupal modules/custom/as_people_ldap
 3. Update this README for new features
 4. Use semantic versioning for releases
 
+## Upgrading from Previous Versions
+
+If you're upgrading from a version that stored credentials in configuration:
+
+1. **Install Key module:**
+   ```bash
+   composer require drupal/key
+   drush en key -y
+   ```
+
+2. **Re-enter credentials:**
+   - Navigate to `/admin/config/services/as-people-ldap-settings`
+   - The form will be empty (old config values are no longer used)
+   - Enter your LDAP RDN and password
+   - Save the form
+
+3. **Verify credentials are stored as keys:**
+   ```bash
+   drush key:list | grep as_people_ldap
+   ```
+   You should see:
+   - `as_people_ldap_rdn`
+   - `as_people_ldap_password`
+
+4. **Test LDAP connection:**
+   - Visit `/people_ldap/{netid}` with a valid NetID
+   - Or use a block configured with a NetID
+
+5. **Remove old config (optional):**
+   ```bash
+   # Export config to remove old ldaprdn/ldappass values
+   drush config:delete as_people_ldap.settings.ldaprdn
+   drush config:delete as_people_ldap.settings.ldappass
+   drush cex -y
+   ```
+
 ## Security Considerations
 
-- ✅ LDAP credentials stored in configuration (use Key module for production)
+- ✅ LDAP credentials stored using Key module (database, not config)
+- ✅ Credentials never exported with configuration
 - ✅ LDAPS (SSL/TLS) used for all connections
 - ✅ Client certificates required for authentication
 - ✅ Passwords never displayed in debug output
+- ✅ Password field uses masked input
 - ✅ Only caches data with valid Cornell emails
 - ✅ Input sanitization on NetID parameter
+- ✅ Debug mode only works in lando/dev environments
 
 **Production Recommendations:**
-- Use Drupal Key module to store LDAP credentials
-- Restrict access to settings form
+- Restrict access to settings form (`/admin/config/services/as-people-ldap-settings`)
+- Use environment-specific databases (don't copy production DB to dev)
 - Monitor LDAP query logs
 - Rotate certificates regularly
+- Never commit database dumps with production credentials
 
 ## Maintainers
 
@@ -634,6 +712,14 @@ Current maintainers for Drupal 10:
 GPL-2.0-or-later
 
 ## Changelog
+
+### 2.1.0 (2025-02-18)
+- **Security:** Integrated Key module for secure credential storage
+- Credentials now stored in database, never exported with config
+- Password field changed to masked input
+- Added debug mode checkbox (only works in lando/dev)
+- Improved form UX with fieldsets and better descriptions
+- Updated README with Key module documentation
 
 ### 2.0.0 (2025-02-18)
 - Refactored to OOP architecture with service classes

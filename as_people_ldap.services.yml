@@ -7,7 +7,7 @@ services:
   # Service classes
   as_people_ldap.api:
     class: Drupal\as_people_ldap\Service\LdapApiService
-    arguments: ['@cache.data', '@config.factory', '@logger.channel.as_people_ldap']
+    arguments: ['@cache.data', '@config.factory', '@key.repository', '@logger.channel.as_people_ldap']
 
   as_people_ldap.formatter:
     class: Drupal\as_people_ldap\Service\LdapFormatterService

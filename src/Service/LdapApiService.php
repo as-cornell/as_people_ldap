@@ -4,6 +4,7 @@ namespace Drupal\as_people_ldap\Service;
 
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\key\KeyRepositoryInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -28,6 +29,13 @@ class LdapApiService {
   protected $configFactory;
 
   /**
+   * The key repository service.
+   *
+   * @var \Drupal\key\KeyRepositoryInterface
+   */
+  protected $keyRepository;
+
+  /**
    * The logger service.
    *
    * @var \Psr\Log\LoggerInterface
@@ -41,12 +49,15 @@ class LdapApiService {
    *   The cache backend.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\key\KeyRepositoryInterface $key_repository
+   *   The key repository service.
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger service.
    */
-  public function __construct(CacheBackendInterface $cache, ConfigFactoryInterface $config_factory, LoggerInterface $logger) {
+  public function __construct(CacheBackendInterface $cache, ConfigFactoryInterface $config_factory, KeyRepositoryInterface $key_repository, LoggerInterface $logger) {
     $this->cache = $cache;
     $this->configFactory = $config_factory;
+    $this->keyRepository = $key_repository;
     $this->logger = $logger;
   }
 
@@ -71,7 +82,14 @@ class LdapApiService {
     // cache life variable.
     $clife = rand(345600, 518400);
 
-    // Get ldaprdn and ldappass from config.
+    // Get credentials from Key module.
+    $ldaprdn_key = $this->keyRepository->getKey('as_people_ldap_rdn');
+    $ldappass_key = $this->keyRepository->getKey('as_people_ldap_password');
+
+    $ldaprdn = $ldaprdn_key ? $ldaprdn_key->getKeyValue() : '';
+    $ldappass = $ldappass_key ? $ldappass_key->getKeyValue() : '';
+
+    // Get config for non-sensitive settings.
     $config = $this->configFactory->get("as_people_ldap.settings");
 
     // Debug ONLY when in lando/dev environment AND debug mode is enabled in config.
@@ -85,8 +103,8 @@ class LdapApiService {
       'directory' => [
         'host' => 'ldaps://query.directory.cornell.edu:636/',
         'port' => '636',
-        'bind_rdn' => $config->get("ldaprdn"),
-        'bind_password' => $config->get("ldappass"),
+        'bind_rdn' => $ldaprdn,
+        'bind_password' => $ldappass,
         'display_password' => 'XxXxXxX',
         'base_dn' => 'ou=People,o=Cornell University,c=US',
         'filter' => '(uid=' . $netid . ')',
